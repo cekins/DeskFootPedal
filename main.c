@@ -19,26 +19,13 @@ uint8_t press_count = 0;
 
 bool button_pressed = false;
 
-void press_button(uint8_t button) {
-	switch (button) {
-		case 1:
-			PORTB &= ~(1<<PB0);
-			break;
-		case 2:
-			PORTB &= ~(1<<PB1);
-			break;
-		case 3:
-			PORTB &= ~(1<<PB3);
-			break;
-		case 4:
-			PORTB &= ~(1<<PB4);
-			break;
-		default:
-			return;
-	}
-	button_pressed = true;
-	
-}
+
+void init_pins();
+void init_external_interrupt();
+void init_timer0_interrupt();
+
+void press_button(uint8_t button);
+
 	
 ISR(TIMER0_COMPA_vect) {
 
@@ -56,6 +43,33 @@ ISR(TIMER0_COMPA_vect) {
 ISR(INT0_vect) {
 	++press_count;
 	time_count = 0;
+}
+
+int main(void)
+{
+	init_pins();
+	init_timer0_interrupt();
+	init_external_interrupt();
+
+	//Enable all interrupts
+	sei();
+
+	while(1);;
+
+   	return 0;
+}
+
+void init_pins() {
+
+	//Set PB0, PB1, PB2, PB4 to input pullup (to prevent intermediate low state)
+	PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
+
+	//Set PB0, PB1, PB2, PB4 to output mode
+	DDRB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
+
+	//Set PB2 to input mode with no pullup resistor
+	DDRB &= ~(1<<PB2);
+	PORTB &= ~(1<<PB2);
 }
 
 void init_external_interrupt() {
@@ -87,30 +101,25 @@ void init_timer0_interrupt() {
 	TIMSK |= 1<<OCIE0A;
 }
 
-void init_pins() {
 
-	//Set PB0, PB1, PB2, PB4 to input pullup (to prevent intermediate low state)
-	PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
-
-	//Set PB0, PB1, PB2, PB4 to output mode
-	DDRB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
-
-	//Set PB2 to input mode with no pullup resistor
-	DDRB &= ~(1<<PB2);
-	PORTB &= ~(1<<PB2);
+void press_button(uint8_t button) {
+	switch (button) {
+		case 1:
+			PORTB &= ~(1<<PB0);
+			break;
+		case 2:
+			PORTB &= ~(1<<PB1);
+			break;
+		case 3:
+			PORTB &= ~(1<<PB3);
+			break;
+		case 4:
+			PORTB &= ~(1<<PB4);
+			break;
+		default:
+			return;
+	}
+	button_pressed = true;
+	
 }
 
-
-int main(void)
-{
-	init_pins();
-	init_timer0_interrupt();
-	init_external_interrupt();
-
-	//Enable all interrupts
-	sei();
-
-	while(1);;
-
-   	return 0;
-}
