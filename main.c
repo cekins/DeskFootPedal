@@ -9,6 +9,7 @@
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 
 #define PRESS_WINDOW 10
@@ -16,27 +17,33 @@
 uint8_t time_count = 0;
 uint8_t press_count = 0;
 
+bool button_pressed = false;
+
 void press_button(uint8_t button) {
 	switch (button) {
 		case 1:
-			PINB |= 1<<PB0;
+			PORTB &= ~(1<<PB0);
 			break;
 		case 2:
-			PINB |= 1<<PB1;
+			PORTB &= ~(1<<PB1);
 			break;
 		case 3:
-			PINB |= 1<<PB3;
+			PORTB &= ~(1<<PB3);
 			break;
 		case 4:
-			PINB |= 1<<PB4;
+			PORTB &= ~(1<<PB4);
 			break;
 		default:
 			return;
 	}
+	button_pressed = true;
 	
 }
 	
 ISR(TIMER0_COMPA_vect) {
+
+	if (button_pressed)
+		PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
 
 	if (time_count > PRESS_WINDOW)
 		return;
@@ -87,7 +94,6 @@ void init_pins() {
 
 	//Set PB0, PB1, PB2, PB4 to output mode
 	DDRB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
-
 
 	//Set PB2 to input mode with no pullup resistor
 	DDRB &= ~(1<<PB2);
