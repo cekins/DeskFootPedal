@@ -8,9 +8,49 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
+#include <stdint.h>
+
+
+#define PRESS_WINDOW 10
+
+uint8_t time_count = 0;
+uint8_t press_count = 0;
+
+void press_button(uint8_t button) {
+	int pin;
+	switch (button) {
+		case 1:
+			pin = PB0;
+			break;
+		case 2:
+			pin = PB1;
+			break;
+		case 3:
+			pin = PB3;
+			break;
+		case 4:
+			pin = PB4;
+			break;
+		default:
+			return;
+	}
+	
+	PINB |= 1<<pin;
+}
+	
+ISR(TIMER0_COMPA_vect) {
+
+	if (time_count > PRESS_WINDOW)
+		return;
+	if (++time_count == PRESS_WINDOW && press_count > 0 && press_count <= 4) {
+		press_button(press_count);
+		press_count = 0;
+	}
+}
 
 ISR(INT0_vect) {
-	PINB |= 1<<PB0;
+	++press_count;
+	time_count = 0;
 }
 
 void init_external_interrupt() {
@@ -35,8 +75,8 @@ void init_timer0_interrupt() {
 	TCCR0B |= (1<<CS00) | (1<<CS02);
 	TCCR0B &= ~(1<<CS01);
 
-	// Set output compare value
-	OCR0A = 0xFF;
+	// Set output compare value to trigger every ~0.1 seconds
+	OCR0A = 98;
 	
 	// Enable interrupt for OCR0A
 	TIMSK |= 1<<OCIE0A;
@@ -56,6 +96,7 @@ void init_pins() {
 int main(void)
 {
 	init_pins();
+	init_timer0_interrupt();
 	init_external_interrupt();
 
 	//Enable all interrupts
