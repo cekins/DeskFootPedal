@@ -9,7 +9,6 @@
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #define PRESS_WINDOW 10
 
