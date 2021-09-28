@@ -11,18 +11,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
 #define PRESS_WINDOW 10
 
 uint8_t time_count = 0;
 uint8_t press_count = 0;
-
 
 void init_pins();
 void init_external_interrupt();
 void init_timer0_interrupt();
 
 void press_button(uint8_t button);
+void clear_buttons();
 
 ISR(INT0_vect) {
 	press_count++;
@@ -39,7 +38,7 @@ ISR(TIMER0_COMPA_vect) {
 		press_count = 0;
 	}
 	else if (time_count == PRESS_WINDOW + 1)
-		PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
+		clear_buttons();
 
 	time_count++;
 }
@@ -102,21 +101,13 @@ void init_timer0_interrupt() {
 }
 
 void press_button(uint8_t button) {
-	switch (button) {
-		case 1:
-			PORTB &= ~(1<<PB0);
-			break;
-		case 2:
-			PORTB &= ~(1<<PB1);
-			break;
-		case 3:
-			PORTB &= ~(1<<PB3);
-			break;
-		case 4:
-			PORTB &= ~(1<<PB4);
-			break;
-		default:
-			return;
-	}
+	static const uint8_t button_pins[] = {PB0, PB1, PB3, PB4};
+
+	PORTB &= ~(1<<button_pins[button-1]);
 }
+
+void clear_buttons() {
+	PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
+}
+
 
