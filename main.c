@@ -17,8 +17,6 @@
 uint8_t time_count = 0;
 uint8_t press_count = 0;
 
-bool button_pressed = false;
-
 
 void init_pins();
 void init_external_interrupt();
@@ -26,24 +24,26 @@ void init_timer0_interrupt();
 
 void press_button(uint8_t button);
 
+ISR(INT0_vect) {
+	press_count++;
+	time_count = 0;
+}
 	
 ISR(TIMER0_COMPA_vect) {
 
-	if (button_pressed)
-		PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
-
-	if (time_count > PRESS_WINDOW)
+	if (time_count > PRESS_WINDOW + 1)
 		return;
-	if (++time_count == PRESS_WINDOW) {
+
+	if (time_count == PRESS_WINDOW) {
 		press_button(press_count);
 		press_count = 0;
 	}
+	else if (time_count == PRESS_WINDOW + 1)
+		PORTB |= (1<<PB0) | (1<<PB1) | (1<<PB3) | (1<<PB4);
+
+	time_count++;
 }
 
-ISR(INT0_vect) {
-	++press_count;
-	time_count = 0;
-}
 
 int main(void)
 {
@@ -96,11 +96,10 @@ void init_timer0_interrupt() {
 
 	// Set output compare value to trigger every ~0.1 seconds
 	OCR0A = 98;
-	
-	// Enable interrupt for OCR0A
+
+	// Enable timer0 interrupt
 	TIMSK |= 1<<OCIE0A;
 }
-
 
 void press_button(uint8_t button) {
 	switch (button) {
@@ -119,7 +118,5 @@ void press_button(uint8_t button) {
 		default:
 			return;
 	}
-	button_pressed = true;
-	
 }
 
