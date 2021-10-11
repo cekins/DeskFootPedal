@@ -9,6 +9,7 @@
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
 #include <stdint.h>
+#include <avr/sleep.h>
 
 #define PRESS_WINDOW 10
 
@@ -18,6 +19,8 @@ uint8_t press_count = 0;
 void init_pins();
 void init_external_interrupt();
 void init_timer0_interrupt();
+
+void disable_unused_peripherals();
 
 void press_button(uint8_t button);
 void clear_buttons();
@@ -42,9 +45,10 @@ ISR(TIMER0_COMPA_vect) {
 	time_count++;
 }
 
-
 int main(void)
 {
+	disable_unused_peripherals();
+
 	init_pins();
 	init_timer0_interrupt();
 	init_external_interrupt();
@@ -52,9 +56,19 @@ int main(void)
 	//Enable all interrupts
 	sei();
 
-	while(1);;
+	set_sleep_mode(SLEEP_MODE_IDLE);
+
+	while(1) 
+		sleep_mode();
 
    	return 0;
+}
+
+void disable_unused_peripherals() {
+	ACSR |= (1<<ACD);
+	ADCSRA &= ~(1<<ADEN); // disable ADC
+	TCCR1 &= ~(1<<CS13) & ~(1<<CS12) & ~(1<<CS11) & ~(1<<CS10); // disable Timer0
+	PRR |= (1<<PRTIM1) | (1<<PRUSI) | (1<<PRADC); //Stutdown ADC, USI, Timer0
 }
 
 void init_pins() {
